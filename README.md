@@ -2,9 +2,6 @@
 
 A powerful yet simple Python desktop application that streamlines the process of merging multiple Excel files and sending them via email. Built with a user-friendly GUI, this tool eliminates repetitive manual work and automates data consolidation tasks.
 
-[![Python Version](https://img.shields.io/badge/python-3.7%2B-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-
 ---
 
 ## 🎯 Overview
@@ -306,8 +303,6 @@ Contributions are welcome! Please follow these guidelines:
 **Muhammad Huzaifa Khan**
 
 - **Role:** Data Analyst & Web Developer | Python Automation
-- **GitHub:** [@HuzaifaKhan06](https://github.com/HuzaifaKhan06)
-- **LinkedIn:** [Connect with me](www.linkedin.com/in/muhammad-huzaifa-khan-806258370)
 
 ---
 
@@ -323,11 +318,7 @@ Contributions are welcome! Please follow these guidelines:
 ## 📞 Support
 
 If you encounter any issues or have questions:
-
-- 🐛 **Report Bugs:** [Open an issue](https://github.com/HuzaifaKhan06/Merge_Excel_Files_Python_Script/issues)
-- 💡 **Feature Requests:** [Start a discussion](https://github.com/HuzaifaKhan06/Merge_Excel_Files_Python_Script/discussions)
 - 📧 **Email:** hk9349881@gmail.com
-
 ---
 
 ## ⭐ Show Your Support
@@ -363,7 +354,7 @@ If this project helped you, please consider:
 
 <div align="center">
 
-**"Automation doesn't replace people — it empowers them."** 🤖
+**"Automation doesn't replace people it empowers them."** 🤖
 
 Made with ❤️ by Muhammad Huzaifa Khan
 
