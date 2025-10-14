@@ -1,0 +1,22 @@
+{
+  "use_gmail": true,
+  "sender_email": "your email",
+  "app_password": "your app password",
+  "save_password": false,
+  "smtp": {
+    "host": "smtp.example.com",
+    "port": 587,
+    "username": "smtp-username",
+    "password": "",
+    "use_tls": true,
+    "use_ssl": false
+  },
+  "backups_enabled": true,
+  "watch_folder": {
+    "enabled": false,
+    "path": "",
+    "auto_email_on_watch": false,
+    "auto_email_recipients": ""
+  },
+  "page_size_default": 100
+}
