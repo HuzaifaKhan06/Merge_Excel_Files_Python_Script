@@ -3,3 +3,6 @@ openpyxl>=3.0.7
 xlrd==1.2.0
 yagmail>=0.14.245
 watchdog>=2.1.9
+google-api-python-client>=2.70.0
+google-auth-httplib2>=0.1.0
+google-auth-oauthlib>=1.0.0
