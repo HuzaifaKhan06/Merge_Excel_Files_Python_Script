@@ -1,361 +1,302 @@
-# 📊 Excel Merge & Email Automation Tool
+# Excel Merge Tool README
 
-A powerful yet simple Python desktop application that streamlines the process of merging multiple Excel files and sending them via email. Built with a user-friendly GUI, this tool eliminates repetitive manual work and automates data consolidation tasks.
+**Author:** Muhamad Huzaifa Khan
 
----
-
-## 🎯 Overview
-
-This application provides a complete solution for Excel file management with:
-
-- **Automated Excel Merging** - Combine multiple `.xlsx` or `.xls` files into a single master file
-- **Real-time Data Preview** - View merged data with row and column statistics
-- **Integrated Email Functionality** - Send merged files directly through Gmail
-- **Intuitive GUI Interface** - No coding knowledge required to operate
-- **Configuration Management** - Securely save email credentials for repeated use
-
-**Ideal for:** Data analysts, accountants, office administrators, researchers, and anyone handling multiple Excel spreadsheets regularly.
+A desktop Tkinter application that merges multiple Excel files into a single master file, previews data, saves backups, sends email (Gmail/yagmail or generic SMTP), and optionally creates/updates Google Sheets. This repository contains `excel_merge_app.py` — a single-file GUI app — and supporting files.
 
 ---
 
-## ✨ Key Features
+## Quick summary / TL;DR
 
-| Feature | Description |
-|---------|-------------|
-| **Multi-File Merging** | Automatically combines multiple Excel files while preserving data integrity |
-| **Data Statistics** | Displays total rows, columns, and sheet counts in real-time |
-| **Email Integration** | Send merged files via Gmail with attachment support |
-| **Smart Configuration** | Saves email settings securely using JSON configuration |
-| **File Format Support** | Compatible with `.xlsx`, `.xls`, and `.xlsm` formats |
-| **Error Handling** | Comprehensive validation and user-friendly error messages |
-| **Cross-Platform** | Works on Windows, macOS, and Linux |
+1. Create a Python venv and install requirements: `python -m venv venv && source venv/bin/activate && pip install -r requirements.txt`.
+2. Obtain `credentials.json` from Google Cloud (Desktop OAuth client), place it in the project folder.
+3. (Optional) Create a Gmail "App password" if using Gmail sending and set it in Settings (do NOT commit it to GitHub).
+4. Run: `python excel_merge_app.py`.
+
+Full step-by-step instructions, screenshots and details below.
 
 ---
 
-## 🛠️ Technology Stack
+## Features (analyzed from `excel_merge_app.py`)
 
-### Core Libraries
+* Select multiple `.xlsx` / `.xls` files and merge them into one `pandas.DataFrame`.
+* Preview first N rows (default 10) and view full merged data with pagination (configurable page size).
+* Save merged master to `.xlsx` or `.csv` and automatically create timestamped backups in `backups/`.
+* Send merged file by email using:
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| **pandas** | Latest | Data manipulation, reading/writing Excel files, and DataFrame operations |
-| **openpyxl** | Latest | Excel file engine for `.xlsx` format support |
-| **PySimpleGUI** | Latest | Cross-platform GUI framework for desktop interface |
-| **yagmail** | Latest | Simplified Gmail SMTP integration for email automation |
-| **os / glob** | Built-in | File system operations and pattern matching |
-| **json** | Built-in | Configuration file management |
+  * Gmail (via `yagmail` and a Gmail App Password) **or**
+  * Generic SMTP host (host, port, TLS/SSL, username/password).
+* Create a Google Sheets spreadsheet from the merged DataFrame using OAuth (Sheets API + Drive).
+* Update an existing Google Sheet by providing its spreadsheet ID (requires the authenticated user to have edit access).
+* Watch a folder (requires `watchdog`) to automatically merge new/modified Excel files and optionally auto-email the result.
+* Keeps a session list of Google Sheets created during the running session and can open them in your default browser.
+* Logging to `excel_merge_app.log` with the ability to open `backups/` folder from the UI.
 
 ---
 
-## 📁 Project Structure
+## Requirements (suggested `requirements.txt`)
 
 ```
-Merge_Excel_Files_Python_Script/
-│
-├── 📄 merge_excel.py              # Main application executable
-├── 📄 excel_merge_app.ipynb       # Jupyter Notebook version (optional)
-├── 📄 requirements.txt            # Python dependencies
-├── 📄 config.json                 # Email configuration (auto-generated)
-├── 📄 README.md                   # This file
-└── 📄 LICENSE                     # License information
+pandas
+openpyxl
+xlrd
+yagmail
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+watchdog
 ```
 
-### File Descriptions
+> Note: `tkinter` is needed by the GUI but is usually provided by your OS Python package. On Debian/Ubuntu install `python3-tk`.
 
-- **`merge_excel.py`** - Primary application file containing all GUI logic, data processing, and email functionality
-- **`excel_merge_app.ipynb`** - Alternative Jupyter Notebook interface for step-by-step execution
-- **`requirements.txt`** - Lists all required Python packages with version specifications
-- **`config.json`** - Stores email credentials securely (created automatically on first configuration)
+## System & Python prerequisites
+
+* Python 3.9+ (3.10/3.11 recommended)
+* `tkinter` (GUI toolkit)
+* Internet access for Google OAuth flows and for sending email (unless using local SMTP on the network).
+
+### Platform notes
+
+* **Linux (Debian/Ubuntu)**: `sudo apt install python3 python3-venv python3-pip python3-tk`.
+* **Windows**: Install Python from python.org (include "Add to PATH"). `tkinter` comes with the official installer.
+* **macOS**: Use the official Python installer or Homebrew; ensure `tkinter` is available (python.org builds include it).
 
 ---
 
-## 🚀 Installation
+## Google Cloud (Sheets + Drive API) — step-by-step
 
-### Prerequisites
+You must create OAuth credentials so the app can create/update Google Sheets for *your* Google account.
 
-- **Python 3.7 or higher** installed on your system
-- **pip** package manager
-- **Git** (for cloning the repository)
+1. Go to [https://console.cloud.google.com/](https://console.cloud.google.com/)
+2. Create a new Project (or select an existing one).
+3. In the left menu go to **APIs & Services → Enabled APIs & services → + ENABLE APIS AND SERVICES**.
+4. Find and enable both **Google Sheets API** and **Google Drive API**.
+5. In **APIs & Services → OAuth consent screen**:
 
-### Step 1: Clone the Repository
+   * Choose **External** if this is for your account and test users (easiest).
+   * App name: e.g. `Excel Merge Tool`.
+   * Add an email address and any optional branding.
+   * **Scopes:** you can leave default; the code uses `https://www.googleapis.com/auth/spreadsheets` and `https://www.googleapis.com/auth/drive.file` (Drive.file allows creating files the app creates).
+   * Save and continue. For testing/personal use you can keep the app in testing mode; add your Google account under **Test users**.
+6. In **Credentials → Create Credentials → OAuth client ID**:
+
+   * Choose **Desktop app**.
+   * Name it (e.g. `ExcelMerge Desktop`), then click Create.
+   * Download the JSON and **save as** `credentials.json` into the project root (the same folder as `excel_merge_app.py`).
+
+**Important**: keep `credentials.json` out of version control. Add it to `.gitignore`.
+
+When you run the app and use the Google Sheets features for the first time, a browser will open and ask you to sign in and grant permissions. After the flow completes the app will save a `token.json` file — do not commit this file either.
+
+---
+
+## Gmail & App Password (for `yagmail` option)
+
+> Google no longer allows plain account password sign-in for third-party apps unless you use OAuth or App Passwords with 2-Step Verification enabled.
+
+1. Make sure the Gmail account you want to send from has **2-Step Verification** enabled.
+2. Visit [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) and create an **App password** for the app (select Mail / Other → name it `ExcelMerge`).
+3. Copy the 16-character app password and paste it into the app Settings (Gmail section → App password). If you don't want to store it, leave the checkbox **Save password** unchecked; the app will require it each session.
+
+Alternatively, if you prefer not to use Gmail, configure **Generic SMTP** settings in Settings (host, port, username, password, TLS/SSL).
+
+---
+
+## Config file and settings
+
+The app writes/reads `config.json` in the working directory. You can either use the Settings UI inside the app to set these values or create `config.json` manually. Example template (do NOT include secrets in the repo):
+
+```json
+{
+  "use_gmail": true,
+  "sender_email": "your.address@gmail.com",
+  "app_password": "",
+  "save_password": false,
+  "smtp": {
+    "host": "",
+    "port": 587,
+    "username": "",
+    "password": "",
+    "use_tls": true,
+    "use_ssl": false
+  },
+  "backups_enabled": true,
+  "watch_folder": {
+    "enabled": false,
+    "path": "",
+    "auto_email_on_watch": false,
+    "auto_email_recipients": ""
+  },
+  "page_size_default": 100
+}
+```
+
+* `use_gmail`: `true` uses yagmail with `sender_email` + `app_password`.
+* `smtp.*`: configure if `use_gmail` is false.
+* `watch_folder.path`: folder path to watch; enable watch to activate.
+
+---
+
+## Running the app locally
+
+1. Create and activate a virtual environment:
+
+**Linux / macOS**
 
 ```bash
-git clone https://github.com/HuzaifaKhan06/Merge_Excel_Files_Python_Script.git
-cd Merge_Excel_Files_Python_Script
-```
-
-### Step 2: Create Virtual Environment (Recommended)
-
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# macOS/Linux
 python3 -m venv venv
 source venv/bin/activate
-```
-
-### Step 3: Install Dependencies
-
-```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Verify Installation
+**Windows (PowerShell)**
+
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+2. Ensure `credentials.json` (Google OAuth) is in the same folder.
+3. Run the app:
 
 ```bash
-python merge_excel.py --version
+python excel_merge_app.py
+```
+
+4. The GUI opens. Use **Select Files** → pick `.xlsx` files → **Merge Now** → review preview → **Save** or **Save & Email**.
+
+---
+
+## Using the Google Sheets features
+
+* **Save → Google Sheets**: prompts for a spreadsheet title and creates a new Google Sheet in your Drive.
+* The first time you call this, a browser will open to complete the OAuth flow. The resulting `token.json` will be saved.
+* **Update existing Google Sheet**: supply the `spreadsheetId` (the long id present in the sheet URL) — the authenticated user must have edit access.
+
+Permissions note: the app uses installed-app OAuth credentials, so spreadsheets created belong to the signed-in user.
+
+---
+
+## Watch folder / Auto-email
+
+If you enable folder watching (requires `watchdog`), the app will monitor the configured folder for new or modified `.xlsx`/`.xls` files. When a change is detected:
+
+* The app will collect all Excel files in that folder and run a merge.
+* If `auto_email_on_watch` is enabled and recipients are set, the app will save a timestamped file in `backups/` and attempt to email the merged file.
+
+Be mindful: the watch logic uses a naive polling/wait approach and waits up to 60s for merging to complete before attempting the email — adjust/watch for large datasets.
+
+---
+
+## Backups & logs
+
+* Backups are saved under `backups/` with a timestamped filename when saving or emailing (if `backups_enabled` is true).
+* Runtime logs are written to `excel_merge_app.log`.
+
+---
+
+## Security & best practices
+
+* **Never commit** `credentials.json`, `token.json`, `config.json` (if it contains secrets), or `backups/` to GitHub. Use `.gitignore`.
+* Treat `app_password` or SMTP passwords as secrets.
+* For sharing the repo, include a `config_template.json` (without secrets) to show users which keys to set.
+
+### Suggested `.gitignore`
+
+```
+credentials.json
+token.json
+config.json
+backups/
+*.log
+venv/
+__pycache__/
 ```
 
 ---
 
-## ▶️ Usage Guide
+## Packaging (optional)
 
-### Launching the Application
-
-#### Method 1: Python Script
+You can create a standalone executable (Windows/macOS/Linux) using PyInstaller:
 
 ```bash
-python merge_excel.py
+pip install pyinstaller
+pyinstaller --onefile --name excel_merge_app excel_merge_app.py
 ```
 
-#### Method 2: Jupyter Notebook
-
-1. Launch Jupyter:
-   ```bash
-   jupyter notebook
-   ```
-2. Open `excel_merge_app.ipynb`
-3. Run cells sequentially
-
-### Application Workflow
-
-1. **Select Files**
-   - Click "Browse" to select the folder containing Excel files
-   - Preview file list and data structure
-
-2. **Merge Data**
-   - Click "Merge Files" button
-   - Review row/column counts
-   - Preview merged data in the display window
-
-3. **Export Results**
-   - Save merged file to desired location
-   - File automatically named with timestamp
-
-4. **Send via Email** (Optional)
-   - Configure email settings in Settings tab
-   - Enter recipient address
-   - Click "Send Email" to dispatch merged file
+Note: Tkinter GUI + resources + OAuth browser flow may require additional flags and testing per OS.
 
 ---
 
-## 📧 Email Configuration
+## Troubleshooting
 
-### Setting Up Gmail Integration
+* **tkinter errors on Linux**: install `python3-tk` (Debian/Ubuntu).
+* **Google auth: credentials.json not found**: make sure file exists and is valid OAuth client for Desktop.
+* **Gmail sending fails**: ensure 2-Step Verification is ON and an App Password was created and pasted into Settings.
+* **watchdog not installed**: either `pip install watchdog` or disable watch folder.
 
-#### Step 1: Configure Application Settings
-
-1. Navigate to the **Settings** tab in the application
-2. Enter your Gmail address
-3. Enter your Gmail App Password (not regular password)
-4. Click **Save Configuration**
-
-#### Step 2: Generate Gmail App Password
-
-**Important:** App Passwords are required for security. Never use your regular Gmail password.
-
-**Instructions:**
-
-1. Visit [Google Account Security](https://myaccount.google.com/security)
-2. Enable **2-Step Verification** if not already enabled
-3. Search for **App Passwords** in the search bar
-4. Select **Mail** and **Other (Custom name)**
-5. Enter app name: "Excel Merge Tool"
-6. Click **Generate**
-7. Copy the 16-character password
-8. Paste into the application settings
-
-#### Step 3: Security Notes
-
-- ✅ Compatible with **personal Gmail accounts only**
-- ⚠️ Corporate/institutional Gmail may require additional SMTP configuration
-- 🔒 App passwords are stored locally in `config.json`
-- 🛡️ Never share your app password publicly
-- 🔄 Revoke app passwords if compromised
-
-### Troubleshooting Email Issues
-
-| Issue | Solution |
-|-------|----------|
-| Authentication failed | Verify app password is correct and 2FA is enabled |
-| Cannot send email | Check internet connection and Gmail server status |
-| Attachment too large | Gmail limit is 25MB; compress or split files |
-| Corporate email blocked | Contact IT department for SMTP configuration |
+If you see stack traces in `excel_merge_app.log`, attach them when asking for help.
 
 ---
 
-## 🔧 Advanced Configuration
+## How to push to GitHub (brief)
 
-### Custom SMTP Settings (For Corporate Email)
+1. Create a new repo on GitHub.
+2. In your project folder:
 
-Edit the email configuration in `merge_excel.py`:
-
-```python
-# Example for custom SMTP server
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-
-smtp_server = "smtp.yourcompany.com"
-smtp_port = 587
-smtp_user = "your.email@company.com"
-smtp_password = "your_password"
+```bash
+git init
+git add .
+git commit -m "Initial commit: Excel Merge Tool"
+git branch -M main
+git remote add origin https://github.com/<youruser>/<repo>.git
+git push -u origin main
 ```
 
-### Customizing Merge Behavior
+**Before** committing, ensure `.gitignore` is set to exclude secrets and backups.
 
-Modify merge parameters in the code:
+---
 
-```python
-# Ignore index column when merging
-merged_df = pd.concat(dataframes, ignore_index=True)
+## Example `config_template.json` (drop-in for users)
 
-# Specify sheet names to merge
-df = pd.read_excel(file, sheet_name='Sheet1')
-
-# Handle duplicate columns
-merged_df = merged_df.loc[:, ~merged_df.columns.duplicated()]
+```json
+{
+  "use_gmail": true,
+  "sender_email": "",
+  "app_password": "",
+  "save_password": false,
+  "smtp": {
+    "host": "",
+    "port": 587,
+    "username": "",
+    "password": "",
+    "use_tls": true,
+    "use_ssl": false
+  },
+  "backups_enabled": true,
+  "watch_folder": {
+    "enabled": false,
+    "path": "",
+    "auto_email_on_watch": false,
+    "auto_email_recipients": ""
+  },
+  "page_size_default": 100
+}
 ```
 
 ---
 
-## 📋 Requirements
+## License & Contribution
 
-### Python Packages
-
-```txt
-pandas>=1.3.0
-openpyxl>=3.0.9
-PySimpleGUI>=4.60.0
-yagmail>=0.15.0
-```
-
-### System Requirements
-
-- **OS:** Windows 10/11, macOS 10.14+, or Linux (Ubuntu 20.04+)
-- **RAM:** 4GB minimum (8GB recommended for large files)
-- **Storage:** 100MB free space
-- **Network:** Internet connection for email functionality
+Include a license (MIT recommended for utilities). Add a `CONTRIBUTING.md` if you want pull requests.
 
 ---
 
-## 🐛 Troubleshooting
+## Contact / Support
 
-### Common Issues
-
-**Problem:** Application won't launch
-
-- **Solution:** Verify Python version with `python --version` (must be 3.7+)
-- **Solution:** Reinstall dependencies: `pip install -r requirements.txt --force-reinstall`
-
-**Problem:** Excel files not merging properly
-
-- **Solution:** Ensure all files have consistent column headers
-- **Solution:** Check for corrupted Excel files
-- **Solution:** Verify file permissions (read access required)
-
-**Problem:** GUI display issues
-
-- **Solution:** Update PySimpleGUI: `pip install --upgrade PySimpleGUI`
-- **Solution:** Try running with administrator/sudo privileges
-
-**Problem:** Memory errors with large files
-
-- **Solution:** Process files in smaller batches
-- **Solution:** Increase available system RAM
-- **Solution:** Use 64-bit Python installation
+If you want me to prepare a release build (PyInstaller) or add features (column-matching rules, scheduled merging, background service), reply here with what OS and how you'd like it distributed.
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
-3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** to the branch (`git push origin feature/AmazingFeature`)
-5. **Open** a Pull Request
-
-### Development Guidelines
-
-- Follow PEP 8 style guidelines
-- Add unit tests for new features
-- Update documentation for API changes
-- Include comments for complex logic
-
----
-
-## 👨‍💻 Author
-
-**Muhammad Huzaifa Khan**
-
-- **Role:** Data Analyst & Web Developer | Python Automation
-
----
-
-## 🙏 Acknowledgments
-
-- PySimpleGUI team for the excellent GUI framework
-- Pandas community for robust data manipulation tools
-- yagmail developers for simplified email integration
-- All contributors and users who provide feedback
-
----
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-- 📧 **Email:** hk9349881@gmail.com
----
-
-## ⭐ Show Your Support
-
-If this project helped you, please consider:
-
-- ⭐ **Starring** the repository
-- 🍴 **Forking** for your own projects
-- 📢 **Sharing** with colleagues
-- 💬 **Providing feedback** and suggestions
-
----
-
-## 📊 Project Statistics
-
-![GitHub stars](https://img.shields.io/github/stars/HuzaifaKhan06/Merge_Excel_Files_Python_Script?style=social)
-![GitHub forks](https://img.shields.io/github/forks/HuzaifaKhan06/Merge_Excel_Files_Python_Script?style=social)
-![GitHub issues](https://img.shields.io/github/issues/HuzaifaKhan06/Merge_Excel_Files_Python_Script)
-
----
-
-## 🔮 Future Enhancements
-
-- [ ] Support for CSV and JSON file formats
-- [ ] Scheduled automatic merging
-- [ ] Cloud storage integration (Google Drive, Dropbox)
-- [ ] Advanced filtering and transformation options
-- [ ] Multi-language support
-- [ ] Batch email sending with templates
-- [ ] Data visualization dashboard
-
----
-
-<div align="center">
-
-**"Automation doesn't replace people it empowers them."** 🤖
-
-Made with ❤️ by Muhammad Huzaifa Khan
-
-</div>
+*End of README*
